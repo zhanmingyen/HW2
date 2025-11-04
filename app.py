@@ -1,3 +1,11 @@
+import sys
+import types
+
+# Patch for distutils removal in Python 3.12+
+if 'distutils' not in sys.modules:
+    distutils = types.ModuleType("distutils")
+    sys.modules['distutils'] = distutils
+
 import streamlit as st
 import pandas as pd
 import joblib

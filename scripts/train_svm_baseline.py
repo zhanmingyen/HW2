@@ -8,6 +8,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
 from sklearn.metrics import classification_report, roc_auc_score
+from sklearn.calibration import CalibratedClassifierCV
 
 
 def simple_preprocess(text: str) -> str:
@@ -42,18 +43,18 @@ def train_and_evaluate(csv_path: str, model_out: str):
 
     X_train, X_test, y_train, y_test = train_test_split(Xt, y, test_size=0.2, stratify=y, random_state=42)
 
-    clf = LinearSVC(random_state=42, max_iter=5000)
+    clf = CalibratedClassifierCV(LinearSVC(random_state=42, max_iter=5000, dual=False), method='isotonic', cv=5)
     clf.fit(X_train, y_train)
 
     preds = clf.predict(X_test)
     report_str = classification_report(y_test, preds, target_names=["ham", "spam"]) 
     report_dict = classification_report(y_test, preds, target_names=["ham", "spam"], output_dict=True)
 
-    # Try to compute ROC AUC if decision_function exists
+    # Try to compute ROC AUC if predict_proba exists
     auc = None
-    if hasattr(clf, "decision_function"):
+    if hasattr(clf, "predict_proba"):
         try:
-            scores = clf.decision_function(X_test)
+            scores = clf.predict_proba(X_test)[:, 1]
             auc = float(roc_auc_score(y_test, scores))
         except Exception:
             auc = None
